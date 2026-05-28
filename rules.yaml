@@ -1,0 +1,23 @@
+# RECON 推理规则配置
+# 修改此文件可自定义各模块的推理文本，无需改动 Python 代码
+# 支持 {param} 格式的变量替换
+
+dns:
+  spf_missing: "无SPF = 你的域名今天就可以被用来发钓鱼邮件。"
+  lolipop: "共享主机 = 无工程预算。低成本内容型公司，无专职运维。"
+
+ssl:
+  letsencrypt: "Let's Encrypt = 无InfoSec预算。打Enterprise客户时IT部门会注意到。"
+  subdomain_count: "每个子域名 = 一条业务线。无 staging/dev/api = 无工程团队。"
+
+headers:
+  php_eol: "PHP 7.x EOL = 生产环境运行已无安全更新的版本。漏洞库里有现成的利用脚本。"
+  security_headers_missing: "缺失 {count} 个安全头 = IT合规审查直接不通过。企业采购不会选择。"
+  cloudflare_hint: "检测到 Cloudflare，SSL 证书信息可能来自 CDN 而非源站，结果仅供参考。"
+
+email:
+  dmarc_missing: "无DMARC = 最佳销售切入点：「您的域名今天就可以被用来对您的客户发钓鱼邮件」。"
+
+tech:
+  no_crm: "无CRM工具 = 销售靠表单+邮件手动管理，规模化瓶颈清晰。"
+  ga_id: "GA ID {id} 可在 spyonweb.com 反查出该公司所有未公开的关联网站。这是最强的被动侦察手段。"

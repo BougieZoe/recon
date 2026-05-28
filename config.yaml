@@ -1,0 +1,17 @@
+# RECON 配置文件
+# 修改此文件可配置外部 API 密钥（可选）
+# 所有模块均支持无 API 降级运行
+
+api:
+  # VirusTotal API Key (v3) — ASN/IP 模块增强
+  virustotal: ""
+
+  # SecurityTrails API Key — 子域名枚举增强
+  securitytrails: ""
+
+  # GitHub Personal Access Token — 泄露搜索
+  # 创建: https://github.com/settings/tokens (需 repo 权限)
+  github_token: ""
+
+  # Shodan API Key — 预留
+  shodan: ""

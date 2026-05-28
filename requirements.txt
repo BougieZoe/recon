@@ -1,0 +1,7 @@
+# RECON - Passive Intelligence CLI
+# 依赖
+
+# 核心 (可选，用于 YAML rules 加载)
+PyYAML>=5.0
+
+# 运行不需要额外依赖 — 仅需 Python 3.7+ 标准库

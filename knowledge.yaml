@@ -1,0 +1,110 @@
+# RECON 行业知识库
+# 各行业的针对性安全/商业建议
+# 自动匹配 CMS/技术栈
+
+ecommerce:
+  name: "电商 / EC"
+  description: "电商站点攻击面大（支付、用户数据、购物车）。PCI DSS 合规是基本要求。"
+  checklist:
+    - text: "PCI DSS 合规检查（信用卡数据处理）"
+      risk: "high"
+    - text: "购物车页面必须 HSTS + CSP"
+      risk: "high"
+    - text: "用户登录页检查 CSRF 防护"
+      risk: "medium"
+    - text: "检查第三方支付 SDK 版本（Stripe/Paidy）"
+      risk: "medium"
+    - text: "隐私政策 / 个人信息保护法 合规"
+      risk: "medium"
+    - text: "CDN + WAF 部署检查（DDoS 防护）"
+      risk: "high"
+
+saas:
+  name: "SaaS / IT"
+  description: "SaaS 公司的安全直接影响客户信任和企业采购决策。SOC2/ISO27001 是门槛。"
+  checklist:
+    - text: "DMARC p=reject 强制（企业客户要求）"
+      risk: "high"
+    - text: "CSP 配置（XSS 防护 + API 白名单）"
+      risk: "high"
+    - text: "API 端点的鉴权和限流检查"
+      risk: "high"
+    - text: "Status page / uptime 公开（企业客户要求）"
+      risk: "medium"
+    - text: "子域名接管风险检查（CNAME 未使用）"
+      risk: "high"
+    - text: "SSO / OAuth 配置检查"
+      risk: "medium"
+
+content_media:
+  name: "内容 / 媒体"
+  description: "内容型网站依赖 SEO 和广告收入。可用性和性能直接影响收入。"
+  checklist:
+    - text: "CDN 部署（影响 PageSpeed 和 SEO 排名）"
+      risk: "high"
+    - text: "AMP / Core Web Vitals 优化"
+      risk: "medium"
+    - text: "广告 SDK 检查（安全注入风险）"
+      risk: "medium"
+    - text: "WordPress/ 插件版本检查"
+      risk: "high"
+    - text: "CSP 配置防止广告篡改"
+      risk: "medium"
+
+education_nonprofit:
+  name: "教育 / 非营利"
+  description: "教育类站点通常有学生/用户个人信息。预算有限但合规要求不低。"
+  checklist:
+    - text: "个人信息保护法合规（学生数据）"
+      risk: "high"
+    - text: "表单传输加密（HTTPS + HSTS）"
+      risk: "high"
+    - text: ".ac.jp / .edu 域名安全（信誉保护）"
+      risk: "medium"
+    - text: "CMS 安全更新（常见攻击目标）"
+      risk: "high"
+    - text: "第三方服务数据共享范围确认"
+      risk: "medium"
+
+agency:
+  name: "代理商 / 工作室"
+  description: "代理商管理多个客户站点。权限隔离和供应链安全是关键。"
+  checklist:
+    - text: "各客户站点的凭据隔离检查"
+      risk: "high"
+    - text: "客户数据访问权限管理"
+      risk: "high"
+    - text: "白标/代理平台版本更新"
+      risk: "medium"
+    - text: "DNS 和域名注册商安全性"
+      risk: "medium"
+
+small_business:
+  name: "小规模企业"
+  description: "小企业通常预算有限。重点在基础安全和合规入门。"
+  checklist:
+    - text: "HTTPS 强制（Google 排名因素）"
+      risk: "high"
+    - text: "邮件安全（DMARC/SPF/DKIM 基础配置）"
+      risk: "high"
+    - text: "基本 WAF / 安全插件安装"
+      risk: "medium"
+    - text: "业务邮箱 vs 免费邮箱使用确认"
+      risk: "medium"
+
+general:
+  name: "通用"
+  description: "基础安全检查适用于所有网站。建议逐项排查。"
+  checklist:
+    - text: "HTTPS + HSTS 配置"
+      risk: "high"
+    - text: "DMARC/SPF/DKIM 邮件安全"
+      risk: "high"
+    - text: "安全响应头（CSP/X-Frame-Options 等）"
+      risk: "high"
+    - text: "CDN 部署"
+      risk: "medium"
+    - text: "子域名接管检查"
+      risk: "medium"
+    - text: "定期安全扫描"
+      risk: "medium"
