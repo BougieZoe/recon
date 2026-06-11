@@ -5,3 +5,10 @@
 PyYAML>=5.0
 
 # 运行不需要额外依赖 — 仅需 Python 3.7+ 标准库
+
+# Person mode (Steps 2-7)
+httpx
+beautifulsoup4
+weasyprint
+openai
+rich
