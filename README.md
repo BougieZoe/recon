@@ -173,9 +173,9 @@ Enter a name, a social handle, or `name + company` to begin:
 
 | Input format     | Example                        |
 |------------------|--------------------------------|
-| Full name        | `Toki Hamasaki`                |
-| Handle + website | `@toki + example.com`          |
-| Name + company   | `Toki Hamasaki + Acme Corp`    |
+| Full name        | `Jane Smith`                   |
+| Handle + website | `@janedoe + example.com`       |
+| Name + company   | `Jane Smith + Acme Corp`       |
 | Website only     | `https://example.com/about`    |
 
 ### Data sources (public, passive)
