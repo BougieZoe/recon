@@ -1,222 +1,208 @@
 <p align="center">
   <img src="https://img.shields.io/badge/RECON-Passive%20Intel-%2322d3ee?style=flat-square" alt="RECON">
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square" alt="Python">
-  <img src="https://img.shields.io/badge/Hackathon-Ready-brightgreen?style=flat-square" alt="Hackathon">
+  <img src="https://img.shields.io/badge/Platform-macOS%20%7C%20Linux%20%7C%20Windows%20%7C%20Termux-lightgrey?style=flat-square" alt="Platform">
+  <img src="https://img.shields.io/badge/License-MIT-brightgreen?style=flat-square" alt="License">
 </p>
 
+<img width="1280" alt="Recon" src="https://github.com/user-attachments/assets/1f2b9f3f-62fe-4c69-8741-ad94c95af34a" />
+
 <h1 align="center">🔍 RECON</h1>
-<p align="center"><b>Passive Intelligence CLI — 被动情报分析工具</b></p>
-<p align="center">输入一个域名，输出一份可落地的商业 + 技术情报。</p>
+<p align="center"><b>Passive Intelligence CLI</b> — Point at a domain or a person. Get an actionable intelligence brief in seconds.</p>
+
+<p align="center">
+  <code>recon example.com</code> · <code>recon -p</code> · <code>recon --web</code>
+</p>
 
 ---
 
-## Installation
+## ✨ Highlights
+
+| What | How |
+|------|-----|
+| **Domain recon** | DNS, SSL, headers, email security, subdomains, tech stack, ASN/IP |
+| **Person recon** | Public-data passive OSINT with AI-powered intent mapping |
+| **Zero network probes** | No port scans, no active fingerprinting — fully passive |
+| **No API keys required** | Everything comes from public sources (DNS, crt.sh, web scraping) |
+| **Interactive TUI** | Real-time scan status, typewriter output, theme switching |
+| **Export formats** | Markdown, JSON, PDF & clipboard-ready AI summaries |
+| **Web UI** | Built-in Flask + Streamlit dashboards |
+| **Cross-platform** | macOS, Linux, Windows (Docker/WSL), Termux (Android) |
+
+---
+
+## 🚀 Installation
+
+### macOS / Linux / Termux (one-liner)
 
 ```bash
-# One-liner (macOS / Linux / Termux)
 curl -fsSL https://raw.githubusercontent.com/BougieZoe/recon/main/install.sh | bash
+```
 
-# Or clone and run manually
+This clones the repo, installs Python dependencies, and adds the `recon` alias to your shell.
+
+### Manual setup
+
+```bash
 git clone https://github.com/BougieZoe/recon.git ~/.recon
 cd ~/.recon
 pip3 install -r requirements.txt
+```
 
-# Docker (zero dependencies)
+### Docker (zero dependencies — recommended for Windows)
+
+```bash
 docker build -t recon ~/.recon
 docker run --rm recon example.com --report html
 ```
 
-## Why RECON
-
-在销售、投资、竞品分析场景中，你需要快速了解一家公司的技术栈、安全水平、工程成熟度——但又不能扫端口、不能发请求、不能触碰法律红线。
-
-RECON 只用 **公开 DNS / WHOIS / 证书透明度日志** 等被动源，5 秒内输出：
-- 他们用什么技术（CMS / 框架 / CDN / 第三方服务）
-- 他们的安全水平（SSL / 安全响应头 / DMARC）
-- 他们的工程团队实力（子域名数量 = 业务线、有无 dev/staging）
-- 他们的商业画像（中小企 / SaaS / 电商 / 遗留项目）
-
-## Quick Start
+For **person mode** with Docker:
 
 ```bash
-# Docker（推荐，零依赖）
-docker build -t recon ~/.recon
-docker run --rm recon example.com --report html
-
-# macOS 原生
-python3 ~/.recon/recon.py example.com
+docker run -it --rm recon python3 recon.py --person
 ```
 
-## Usage
+### Windows (via PowerShell)
+
+```powershell
+# Option A — Docker Desktop (recommended)
+docker build -t recon %USERPROFILE%\.recon
+docker run --rm recon example.com
+
+# Option B — Python pip (requires Python 3.10+)
+git clone https://github.com/BougieZoe/recon.git $env:USERPROFILE\.recon
+cd $env:USERPROFILE\.recon
+pip install -r requirements.txt
+python recon.py example.com
+
+# Option C — WSL (run the Linux install script)
+wsl bash -c "$(curl -fsSL https://raw.githubusercontent.com/BougieZoe/recon/main/install.sh)"
+```
+
+---
+
+## 🎯 Quick Start
 
 ```bash
-# 单域名扫描
+# Domain intelligence
 recon example.com
 
-# 所有模块 + 深度分析
-recon example.com --analyze
+# Person intelligence (interactive TUI)
+recon -p
 
-# 并行扫描（快 3×）
-recon example.com --parallel --analyze
-
-# 导出 HTML 报告
-recon example.com --report html && open recon_example.com.html
-
-# 批量比较多个域名
-recon example.com example.org --batch
-
-# 离线演示（不用网络，适合现场展示）
-recon --demo --report html
-recon --demo --demo-profile legacy
-
-# 交互终端模式
-recon -i
-
-# JSON 输出 + 保存到文件
-recon example.com --json --output scan.json
-
-# 查看 / 比较历史扫描
-recon --history
-recon --diff 1 2
-
-# Web UI
+# Launch the web dashboard
 recon --web
 
-# Person intelligence mode (interactive TUI)
+# Offline demo mode for presentations
+recon --demo --report html
+```
+
+---
+
+## 📖 Usage
+
+### Domain scanning
+
+```bash
+recon example.com                          # Single domain
+recon example.com --analyze                # Deep analysis with scoring
+recon example.com --parallel --analyze     # Parallel mode (3× faster)
+recon example.com example.org --batch      # Batch comparison
+```
+
+### Output & reports
+
+```bash
+recon example.com --json --output scan.json          # JSON export
+recon example.com --report md                        # Markdown report
+recon example.com --report html && open recon_*.html  # HTML report
+```
+
+### History & comparison
+
+```bash
+recon --history     # View past scans
+recon --diff 1 2    # Compare two scans
+```
+
+### Interactive terminal
+
+```bash
+recon -i            # Launch interactive TUI
+```
+
+### Demo mode (offline, no network)
+
+```bash
+recon --demo --report html
+recon --demo --demo-profile legacy
+```
+
+---
+
+## 👤 Person Mode
+
+Person mode turns RECON into a passive OSINT tool for people. Enter a name, handle, or `name + company` — it scrapes public sources, feeds the data to an AI analyst, and produces a structured **intent map**.
+
+```bash
 recon --person
-recon --person --theme cyan
-
-# Person mode — export results directly
-recon --person --report md
-recon --person --theme pink --report md
+recon -p --theme cyan
+recon -p --report md
 ```
 
-## Modules
+### Input formats
 
-| 模块 | 功能 | 数据源 |
-|------|------|--------|
-| `dns` | A/AAAA/MX/NS/TXT/SOA + 托管识别 | dig |
-| `ssl` | 颁发机构 / 过期 / 子域名 / TLS 版本 | openssl, crt.sh |
-| `headers` | 安全响应头 / CDN / CORS / HTTP 版本 | curl |
-| `email` | SPF/DKIM/DMARC/MTA-STS | dig |
-| `tech` | CMS / 框架 / 第三方服务指纹 | 响应头 + 页面特征 |
-| `basics` | www 重定向 / 端口扫描 | socket |
-| `subdomain` | 子域名枚举 | crt.sh |
-| `wayback` | 历史快照 | Wayback Machine CDX |
-| `email_harvest` | 邮件地址收集 | 页面 + PGP |
-| `leak_search` | 泄露搜索 | HIBP + GitHub |
-| `asn_ip` | IP 归属 / ASN / VT 检测 | Team Cymru + dig |
+| Format | Example |
+|--------|---------|
+| Full name | `Jane Smith` |
+| Handle + website | `@janedoe + example.com` |
+| Name + company | `Jane Smith + Acme Corp` |
+| Website only | `https://example.com/about` |
 
-## Scoring
+### Data sources (100% passive)
 
-5 维度加权评分（0-100）：
+| Source | Method |
+|--------|--------|
+| X / Twitter | Nitter mirrors (profile, bio, recent posts) |
+| GitHub | Public API (bio, repos, organization) |
+| News | DuckDuckGo HTML search |
+| LinkedIn | Google cache of public profiles |
+| Instagram | Public profile scrape + Google fallback |
+| Website | Full page scrape when a URL is provided |
 
-```
-总体 = 安全×35% + 基建×25% + 邮件×20% + 技术债×20%
-```
+### AI intent map
 
-- **安全**: DMARC / SSL 证书 / 安全响应头 / CDN
-- **基建**: 托管商 / CDN / IPv6 / DNS 冗余
-- **邮件**: DMARC 策略 / DKIM / SPF -all
-- **技术债**: PHP 版本 / 过期组件 / 免费证书
+All collected data is sent to **DeepSeek** (via OpenAI-compatible API) which returns:
 
-## Architecture
+| Field | Description |
+|-------|-------------|
+| `core_drive` | One-sentence summary of the person's fundamental motivation |
+| `recurring_signals` | Topics, words, or emotions appearing 3+ times |
+| `workarounds` | Clumsy detours that reveal real pain points |
+| `direction` | Trajectory based on the last 6 months of signals |
+| `contact_window` | Topic or framing most likely to get their attention |
+| `confidence` | Confidence score (0–100) |
+| `data_quality` | `high` · `medium` · `low` |
 
-```
-~/.recon/
-├── recon.py         ← 入口（5 行）
-├── recon/           ← 主包（28 文件）
-│   ├── core.py      ← ModuleOutput, ANSI 颜色, 工具
-│   ├── cli.py       ← CLI 解析 + 交互模式
-│   ├── analysis.py  ← 评分引擎 + 商业洞察
-│   ├── report.py    ← HTML / Markdown 报告
-│   ├── history.py   ← SQLite 历史
-│   ├── webapp.py    ← Streamlit Web UI
-│   ├── ssl.py       ← SSL/TLS 扫描
-│   ├── dns.py       ← DNS 记录扫描
-│   ├── headers.py   ← HTTP 响应头
-│   ├── email.py     ← 邮件安全
-│   ├── tech.py      ← 技术指纹
-│   ├── basics.py    ← 基础检查
-│   ├── subdomain.py ← 子域名
-│   ├── wayback.py   ← 历史快照
-│   ├── email_harvest.py
-│   ├── leak_search.py
-│   ├── asn_ip.py
-│   ├── knowledge.py ← 行业知识库
-│   ├── config.py    ← API Key 配置
-│   ├── rules.py     ← 推理规则
-│   ├── demo.py      ← 离线演示数据
-│   ├── person.py    ← Person mode orchestrator
-│   ├── person_sources.py   ← Public data scrapers
-│   ├── person_ai.py        ← DeepSeek AI analysis
-│   ├── person_render.py    ← Cyberpunk TUI renderer
-│   ├── person_export.py    ← PDF / MD / JSON export
-│   ├── person_client.py    ← Importable API client
-│   ├── person_api_server.py ← Flask API server
-│   └── person_web.py       ← Web UI wrapper
-├── modules/         ← 用户插件
-├── Dockerfile
-└── requirements.txt
-```
+### Export options
 
-## Person Mode
-
-Person mode (`--person` / `-p`) is an interactive TUI for passive intelligence gathering on individuals, not domains.
+After analysis, the interactive footer lets you export:
 
 ```
-recon -p
+┌──────────────────────────────────────────────┐
+│  [E] Export PDF  [M] Markdown  [J] JSON      │
+│  [C] Copy for AI  [Q] Quit                   │
+└──────────────────────────────────────────────┘
 ```
 
-Enter a name, a social handle, or `name + company` to begin:
-
-| Input format     | Example                        |
-|------------------|--------------------------------|
-| Full name        | `Toki Hamasaki`                |
-| Handle + website | `@toki + example.com`          |
-| Name + company   | `Toki Hamasaki + Acme Corp`    |
-| Website only     | `https://example.com/about`    |
-
-### Data sources (public, passive)
-
-| Source             | Method                                      |
-|--------------------|---------------------------------------------|
-| X / Twitter        | Nitter mirror (profile + recent posts)      |
-| GitHub             | Public API (bio / repos / org)              |
-| News               | DuckDuckGo HTML search (news mentions)      |
-| LinkedIn           | Google cache (linkedin.com/in profiles)     |
-| Instagram          | Public profile scrape + Google fallback     |
-| Website            | Page scrape (if website URL provided)       |
-
-### AI analysis
-
-Raw data from all sources is sent to DeepSeek (via OpenAI-compatible API) which produces a structured **intent map**:
-
-- `core_drive` — one-sentence summary of the person's fundamental motivation
-- `recurring_signals` — topics / words / emotions appearing 3+ times
-- `workarounds` — clumsy detours that reveal real pain points
-- `direction` — trajectory based on last 6 months of signals
-- `contact_window` — what topic/framing would get their attention
-- `confidence` — 0–100 score
-- `data_quality` — high / medium / low
-
-### Interactive export
-
-After analysis, the TUI shows an export footer:
-
-```
-│  [E] Export PDF  [M] Export Markdown  [J] JSON  │
-│  [C] Copy for AI  [Q] Quit                      │
-```
-
-Press `1` / `2` / `3` to switch between **cyan**, **green**, and **pink** color themes mid-session.
+Press `1` · `2` · `3` to cycle themes (**cyan** · **green** · **pink**) mid-session.
 
 ### Themes
 
 ```bash
-recon -p --theme cyan    # cyberpunk cyan (default)
-recon -p --theme green   # matrix green
-recon -p --theme pink    # synthwave pink
+recon -p --theme cyan    # Cyberpunk cyan (default)
+recon -p --theme green   # Matrix green
+recon -p --theme pink    # Synthwave pink
 ```
 
 ### Person Web UI
@@ -225,17 +211,82 @@ recon -p --theme pink    # synthwave pink
 recon -p --web
 ```
 
-Starts a Flask server on `http://localhost:5001` with a web-based interface for the same person analysis engine.
+Starts a Flask server at `http://localhost:5001` with the same person analysis engine in your browser.
 
 ---
 
-## Hackathon Notes
+## 🧩 Modules
 
-- **演示**: `recon --demo --report html && open recon_*.html` — 完全离线，零翻车风险
-- **Key 差异**: 无需任何 API Key，所有数据来自公开源
-- **Web UI**: `recon --web` 启动 Streamlit 仪表盘
-- **技术栈**: 纯 Python 3 + stdlib，外部依赖仅 openssl/dig/whois（Docker 已包含）
+| Module | Function | Source |
+|--------|----------|--------|
+| `dns` | A/AAAA/MX/NS/TXT/SOA records + hosting detection | `dig` |
+| `ssl` | Certificate authority, expiry, subdomains, TLS version | `openssl`, `crt.sh` |
+| `headers` | Security headers, CDN detection, CORS, HTTP version | `curl` |
+| `email` | SPF, DKIM, DMARC, MTA-STS | `dig` |
+| `tech` | CMS, framework, CDN & third-party service fingerprinting | Response headers + page features |
+| `basics` | WWW redirect, open port scan | `socket` |
+| `subdomain` | Subdomain enumeration | `crt.sh` |
+| `wayback` | Historical snapshots | Wayback Machine CDX |
+| `email_harvest` | Email address extraction | Page scrape + PGP |
+| `leak_search` | Credential leak search | HIBP + GitHub |
+| `asn_ip` | IP geolocation, ASN lookup, VirusTotal check | Team Cymru + `dig` |
 
 ---
 
-<p align="center"><i>Built for Hackathon · Passive Reconnaissance · AGI-powered Insights</i></p>
+## 📊 Scoring
+
+Five-axis weighted score (0–100):
+
+```
+Overall = Security × 35% + Infrastructure × 25% + Email × 20% + Tech Debt × 20%
+```
+
+| Axis | Factors |
+|------|---------|
+| **Security** | DMARC policy, SSL certificate quality, security headers, CDN |
+| **Infrastructure** | Hosting provider, CDN, IPv6, DNS redundancy |
+| **Email** | DMARC enforcement, DKIM, SPF `-all` |
+| **Tech Debt** | PHP version, outdated components, free certificates |
+
+---
+
+## 🏗 Architecture
+
+```
+~/.recon/
+├── recon.py                   ← Entry point (5 lines)
+├── recon/                     ← Core package (28 files)
+│   ├── core.py                ← ModuleOutput, ANSI colors, utilities
+│   ├── cli.py                 ← CLI parser + interactive mode
+│   ├── analysis.py            ← Scoring engine + business insights
+│   ├── report.py              ← HTML / Markdown report generator
+│   ├── history.py             ← SQLite scan history
+│   ├── webapp.py              ← Streamlit web dashboard
+│   ├── ssl.py / dns.py / ...  ← Scanner modules
+│   ├── person.py              ← Person mode orchestrator
+│   ├── person_sources.py      ← Public data scrapers
+│   ├── person_ai.py           ← DeepSeek AI analysis
+│   ├── person_render.py       ← Cyberpunk TUI renderer
+│   ├── person_export.py       ← PDF / Markdown / JSON export
+│   ├── person_client.py       ← Importable API client
+│   ├── person_api_server.py   ← Flask API server
+│   └── person_web.py          ← Web UI wrapper
+├── modules/                   ← User plugins (drop `.py` files here)
+├── Dockerfile
+└── requirements.txt
+```
+
+---
+
+## 🧪 Hackathon Notes
+
+- **Demo mode**: `recon --demo --report html && open recon_*.html` — fully offline, zero chance of failure
+- **Zero API keys**: All data comes from public sources — no signups, no rate limits
+- **Web UI**: `recon --web` launches a Streamlit dashboard
+- **Tech stack**: Pure Python 3 + stdlib — external deps are `openssl`, `dig`, `whois` (all bundled in Docker)
+
+---
+
+<p align="center">
+  <i>Built for Hackathons · Passive Reconnaissance · AGI-powered Insights</i>
+</p>
