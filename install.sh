@@ -1,75 +1,30 @@
 #!/bin/bash
-# RECON 安装脚本 — macOS / Linux / Termux
-set -e
+# Detects OS and sets up recon accordingly
+# Supports: macOS, Linux, Termux (Android)
 
-REPO="https://github.com/YOUR_USER/recon.git"
-INSTALL_DIR="$HOME/.recon"
-BIN_DIR="$HOME/.local/bin"
+# Clone if not exists
+if [ ! -d ~/.recon ]; then
+  git clone https://github.com/BougieZoe/recon.git ~/.recon
+fi
 
-detect_platform() {
-  case "$(uname -s)" in
-    Darwin) echo "macos" ;;
-    Linux)
-      if [ -f /data/data/com.termux/files/usr/bin/bash ]; then
-        echo "termux"
-      else
-        echo "linux"
-      fi ;;
-    *) echo "unknown" ;;
-  esac
-}
+# Install Python deps
+cd ~/.recon
+pip3 install -r requirements.txt --break-system-packages 2>/dev/null || \
+pip3 install -r requirements.txt
 
-install_deps() {
-  local plat=$1
-  case "$plat" in
-    macos)
-      if ! command -v brew &>/dev/null; then
-        echo "请先安装 Homebrew: https://brew.sh"
-        exit 1
-      fi
-      brew install openssl bind whois python3
-      ;;
-    termux)
-      pkg update -y
-      pkg install -y python openssl-tool dnsutils whois curl
-      BIN_DIR="$HOME/bin"
-      mkdir -p "$BIN_DIR"
-      ;;
-    linux)
-      echo "请手动安装: python3, openssl, dnsutils (dig), whois"
-      ;;
-  esac
-}
+# Add alias based on shell
+ALIAS_LINE="alias recon='python3 ~/.recon/recon.py --person --theme green'"
 
-setup() {
-  local plat=$1
-  mkdir -p "$INSTALL_DIR"
-
-  if [ ! -f "$INSTALL_DIR/recon.py" ]; then
-    if command -v git &>/dev/null; then
-      git clone "$REPO" /tmp/recon_install
-      cp -r /tmp/recon_install/* "$INSTALL_DIR/"
-      rm -rf /tmp/recon_install
-    else
-      echo "请先安装 git 或手动复制文件到 $INSTALL_DIR"
-      exit 1
-    fi
+for RC in ~/.zshrc ~/.bashrc ~/.bash_profile; do
+  if [ -f "$RC" ]; then
+    grep -q "alias recon=" "$RC" || echo "$ALIAS_LINE" >> "$RC"
   fi
+done
 
-  mkdir -p "$BIN_DIR"
-  cat > "$BIN_DIR/recon" << 'BIN'
-#!/usr/bin/env bash
-PYTHONPATH="$HOME/.recon" exec python3 "$HOME/.recon/recon.py" "$@"
-BIN
-  chmod +x "$BIN_DIR/recon"
+# Termux special case
+if [ -d "/data/data/com.termux" ]; then
+  grep -q "alias recon=" ~/.bashrc || echo "$ALIAS_LINE" >> ~/.bashrc
+fi
 
-  echo "✅ RECON 已安装"
-  echo "   运行: recon example.com"
-  echo "   如果 $BIN_DIR 不在 PATH 中："
-  echo "   echo 'export PATH=\"$BIN_DIR:\$PATH\"' >> ~/.bashrc && source ~/.bashrc"
-}
-
-PLATFORM=$(detect_platform)
-echo "📦 平台: $PLATFORM"
-install_deps "$PLATFORM"
-setup "$PLATFORM"
+echo "✓ recon installed — restart terminal or run: source ~/.zshrc"
+echo "  then just type: recon"

@@ -1,90 +1,174 @@
-import asyncio
-import threading
 import json
 import os
 import subprocess
 import sys
+import termios
+import tty
 from datetime import datetime
 
-from . import person_sources
-from . import person_ai
 from . import person_render
 from . import person_export
+from .person_client import ReconClient
 
 
-def _build_target_info(parsed):
-    info = {}
-    t = parsed["type"]
-    if t == "handle":
-        info["handle"] = parsed["handle"]
-    elif t == "handle_platform":
-        info["handle"] = parsed["handle"]
-        info["platform"] = parsed["platform"]
-    elif t == "name":
-        info["name"] = f"{parsed['first']} {parsed['last']}".strip()
-    elif t == "name_company":
-        info["name"] = f"{parsed['first']} {parsed['last']}".strip()
-        info["company"] = parsed["company"]
-    return info
+_client = None
 
 
-def run_person_recon(input_str, export=None, theme=None):
-    parsed = person_sources.parse_input(input_str)
-    target_info = _build_target_info(parsed)
+def _get_client():
+    global _client
+    if _client is None:
+        _client = ReconClient()
+    return _client
 
-    t = person_render.theme_from_name(theme) if theme else person_render.CYAN_THEME
+
+def _parse_input(raw):
+    raw = raw.strip()
+    if not raw:
+        return None, None
+    if " + " in raw:
+        parts = raw.split(" + ", 1)
+        return parts[0].strip(), parts[1].strip()
+    if raw.startswith("@"):
+        return raw, None
+    if "." in raw and "/" in raw:
+        return None, raw
+    return raw, None
+
+
+def get_line(prompt_str):
+    sys.stdout.write(prompt_str)
+    sys.stdout.flush()
+
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    chars = []
+
+    try:
+        tty.setraw(fd)
+        while True:
+            b = os.read(fd, 1)
+            if b in (b'\r', b'\n'):
+                sys.stdout.write('\r\n')
+                sys.stdout.flush()
+                break
+            elif b in (b'\x7f', b'\x08'):
+                if chars:
+                    chars.pop()
+                    os.write(fd, b'\x08 \x08')
+            elif b == b'\x03':
+                raise KeyboardInterrupt
+            elif b == b'\x15':
+                n = len(chars)
+                chars = []
+                os.write(fd, b'\x08 \x08' * n)
+            elif b[0] >= 32:
+                chars.append(b.decode('utf-8', errors='replace'))
+                os.write(fd, b)
+    finally:
+        termios.tcsetattr(fd, termios.TCSAFLUSH, old_settings)
+
+    return ''.join(chars)
+
+
+def run_person_recon(input_str=None, export=None, theme=None):
+    t = person_render.theme_from_name(theme) if theme else person_render.GREEN_THEME
+    theme_ref = [t]
 
     person_render.render_header(theme=t)
+
+    if input_str is not None:
+        _do_scan(input_str, t, export, theme_ref, website=None)
+        return
+
+    while True:
+        console = person_render.console
+        console.print()
+        try:
+            fd = sys.stdin.fileno()
+            try:
+                termios.tcsetattr(fd, termios.TCSAFLUSH, termios.tcgetattr(fd))
+            except Exception:
+                pass
+            raw = get_line("  \u203a ")
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+
+        target, website = _parse_input(raw)
+
+        if not target and not website:
+            console.print(f"[{t.error}]\u26a0 enter at least a name or website[/]")
+            continue
+
+        if target and website:
+            display_info = f"{target} + {website}"
+        elif target:
+            display_info = target
+        else:
+            display_info = website
+
+        _do_scan(target, t, export, theme_ref, website=website)
+        t = theme_ref[0]
+
+        if export:
+            return
+
+        person_render.render_search_footer(theme=t)
+        choice = person_render.handle_search_footer(theme_ref=theme_ref)
+        t = theme_ref[0]
+        if choice == "q":
+            break
+
+    person_render.console.print(f"  exiting.", style=f"dim {t.primary}")
+
+
+def _do_scan(target, t, export=None, theme_ref=None, website=None):
+    sources = ["nitter", "github", "duckduckgo_news", "linkedin", "instagram"]
+    if website:
+        sources = sources + ["website"]
+    target_info = {"target": target}
+    if website:
+        target_info["website"] = website
+
     person_render.scan_animation(theme=t)
 
-    sources = ["nitter", "github", "google_news", "linkedin", "instagram"]
     display = person_render.ReconDisplay(target_info, sources, theme=t)
     display.start()
 
-    sources_data = {}
     intent_map = {}
+    data_warning_shown = False
 
-    def status_cb(name, status):
+    def on_source(name, status, text_length):
         display.update_source(name, status)
 
-    loop = asyncio.new_event_loop()
+    def on_warning(msg):
+        nonlocal data_warning_shown
+        if not data_warning_shown:
+            person_render.render_data_warning(theme=t)
+            data_warning_shown = True
 
-    def run_sources():
-        asyncio.set_event_loop(loop)
-        p, results = loop.run_until_complete(
-            person_sources.run_all_sources(input_str, status_callback=status_cb)
-        )
-        loop.close()
-        return p, results
+    def on_error(msg):
+        pass
 
-    thread = threading.Thread(target=lambda: setattr(
-        threading.current_thread(), "_result", run_sources()
-    ))
-    thread.start()
-    thread.join()
-    parsed, sources_data = thread._result
+    intent_map = _get_client().analyze_sync(
+        target=target, website=website or "",
+        on_source=on_source, on_warning=on_warning, on_error=on_error,
+    )
+
+    if theme_ref:
+        t = theme_ref[0]
 
     display.stop()
 
-    raw_parts = []
-    for src_name, src_data in sources_data.items():
-        if src_data.get("raw_text"):
-            raw_parts.append(f"[{src_name}]\n{src_data['raw_text'][:2000]}")
-
-    raw_text = "\n\n".join(raw_parts) if raw_parts else "No data collected from any source."
-
-    try:
-        intent_map = person_ai.analyze_person(raw_text)
-    except Exception as e:
+    if not intent_map:
         intent_map = {
-            "core_drive": "AI analysis failed",
+            "core_drive": "No data collected",
             "recurring_signals": [],
             "workarounds": [],
-            "direction": str(e),
+            "direction": "",
             "contact_window": "",
             "confidence": 0,
             "data_quality": "low",
-            "error": str(e),
         }
 
     person_render.render_intent_map_panel(intent_map, theme=t)
@@ -92,10 +176,19 @@ def run_person_recon(input_str, export=None, theme=None):
     pdf_theme = {"primary": t.primary, "warning": t.warning, "error": t.error}
 
     def run_export(action):
-        nonlocal intent_map, sources_data, target_info, parsed
-        name = target_info.get("name") or target_info.get("handle", "unknown")
+        nonlocal intent_map, target_info
+        name = target or "unknown"
         safe_name = name.replace(" ", "_").replace("/", "_")
         ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+
+        sources_data = {}
+        raw_sources = intent_map.get("_sources", {})
+        for src_name, src_info in raw_sources.items():
+            sources_data[src_name] = {
+                "raw_text": "" if src_info.get("status") == "failed" else f"[data from {src_name}]",
+                "bio": "",
+                "posts": [],
+            }
 
         if action == "m":
             md = person_export.generate_markdown(target_info, sources_data, intent_map)
@@ -127,7 +220,7 @@ def run_person_recon(input_str, export=None, theme=None):
             md = person_export.generate_markdown(target_info, sources_data, intent_map)
             try:
                 proc = subprocess.run(["pbcopy"], input=md, text=True, check=True)
-                person_render.console.print("  copied to clipboard", style="green")
+                person_render.console.print(f"  copied to clipboard", style="green")
             except Exception:
                 path = f"intel_{safe_name}_{ts}_ai.txt"
                 with open(path, "w") as f:
@@ -139,4 +232,4 @@ def run_person_recon(input_str, export=None, theme=None):
         return
 
     person_render.show_footer(theme=t)
-    person_render.handle_footer(run_export, theme=t)
+    person_render.handle_footer(run_export, theme_ref=theme_ref)

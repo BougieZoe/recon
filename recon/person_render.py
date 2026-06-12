@@ -59,10 +59,6 @@ def render_header(theme=None):
     squares.append("■ ", style=f"bold {GREEN_THEME.primary}")
     squares.append("■", style=f"bold {PINK_THEME.primary}")
     console.print(squares, justify="center")
-    console.print(
-        Text("select theme with --theme [cyan | green | pink]", style=f"dim {t.primary}"),
-        justify="center",
-    )
     console.print()
     console.print()
 
@@ -100,17 +96,17 @@ class ReconDisplay:
 
     def _render_lines(self):
         lines = []
-        lines.append("TARGET")
-        for key in ("name", "handle", "company", "platform"):
-            val = self.target_info.get(key) if key in self.target_info else ""
-            lines.append(f"  {key}: {val if val else '___'}")
-        lines.append("")
         lines.append("SOURCES")
         for src, status in self.source_status.items():
             icons = {"done": "✓", "failed": "✗", "scanning": "◉"}
             icon = icons.get(status, "?")
             lines.append(f"  {icon} {src}")
         return lines
+
+    def update_theme(self, new_theme):
+        self.theme = new_theme
+        if self.live:
+            self.live.update(self._render_full())
 
     def update_source(self, source_name, status):
         self.source_status[source_name] = status
@@ -171,6 +167,10 @@ def render_intent_map_panel(intent_map, theme=None):
     console.print(f"╰{'─' * (width - 2)}╯", style=t.primary)
 
 
+def _theme_from_key(key):
+    return {"1": "cyan", "2": "green", "3": "pink"}.get(key)
+
+
 def show_footer(theme=None):
     t = theme or CYAN_THEME
     console.print()
@@ -181,18 +181,70 @@ def show_footer(theme=None):
     console.print()
 
 
-def handle_footer(run_export_fn, theme=None):
-    t = theme or CYAN_THEME
+def handle_footer(run_export_fn, theme_ref=None):
+    t = (theme_ref[0] if theme_ref else None) or CYAN_THEME
+    console.print(f"  [dim {t.primary}][1] cyan  [2] green  [3] pink[/]")
     while True:
         try:
             key = input("  select action: ").strip().lower()
+            theme_name = _theme_from_key(key)
+            if theme_name:
+                new_t = theme_from_name(theme_name)
+                if theme_ref:
+                    theme_ref[0] = new_t
+                t = new_t
+                show_footer(theme=t)
+                console.print(f"  [dim {t.primary}][1] cyan  [2] green  [3] pink[/]")
+                continue
             if key == "q":
                 console.print("  exiting.", style=f"dim {t.primary}")
                 return
             elif key in ("e", "m", "j", "c"):
                 run_export_fn(key)
+                show_footer(theme=t)
+                console.print(f"  [dim {t.primary}][1] cyan  [2] green  [3] pink[/]")
             else:
                 console.print("  invalid key", style=f"dim {t.error}")
         except (EOFError, KeyboardInterrupt):
             console.print()
             return
+
+
+def render_data_warning(theme=None):
+    t = theme or CYAN_THEME
+    console.print(f"\n  [{t.warning}]⚠ insufficient data — results are speculative[/]\n")
+
+
+def render_search_footer(theme=None):
+    t = theme or CYAN_THEME
+    console.print()
+    console.print("┌──────────────────────────────────────────────┐", style=f"bold {t.primary}")
+    console.print("│  [ N ] New search  [ Q ] Quit               │", style=f"bold {t.primary}")
+    console.print("└──────────────────────────────────────────────┘", style=f"bold {t.primary}")
+    console.print()
+
+
+def handle_search_footer(theme_ref=None):
+    t = (theme_ref[0] if theme_ref else None) or CYAN_THEME
+    console.print(f"  [dim {t.primary}][1] cyan  [2] green  [3] pink[/]")
+    while True:
+        try:
+            key = input("  select action: ").strip().lower()
+            theme_name = _theme_from_key(key)
+            if theme_name:
+                new_t = theme_from_name(theme_name)
+                if theme_ref:
+                    theme_ref[0] = new_t
+                t = new_t
+                render_search_footer(theme=t)
+                console.print(f"  [dim {t.primary}][1] cyan  [2] green  [3] pink[/]")
+                continue
+            if key == "q":
+                return "q"
+            elif key == "n":
+                return "n"
+            else:
+                console.print("  invalid key", style=f"dim {t.error}")
+        except (EOFError, KeyboardInterrupt):
+            console.print()
+            return "q"

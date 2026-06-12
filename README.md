@@ -10,6 +10,22 @@
 
 ---
 
+## Installation
+
+```bash
+# One-liner (macOS / Linux / Termux)
+curl -fsSL https://raw.githubusercontent.com/BougieZoe/recon/main/install.sh | bash
+
+# Or clone and run manually
+git clone https://github.com/BougieZoe/recon.git ~/.recon
+cd ~/.recon
+pip3 install -r requirements.txt
+
+# Docker (zero dependencies)
+docker build -t recon ~/.recon
+docker run --rm recon example.com --report html
+```
+
 ## Why RECON
 
 在销售、投资、竞品分析场景中，你需要快速了解一家公司的技术栈、安全水平、工程成熟度——但又不能扫端口、不能发请求、不能触碰法律红线。
@@ -65,6 +81,14 @@ recon --diff 1 2
 
 # Web UI
 recon --web
+
+# Person intelligence mode (interactive TUI)
+recon --person
+recon --person --theme cyan
+
+# Person mode — export results directly
+recon --person --report md
+recon --person --theme pink --report md
 ```
 
 ## Modules
@@ -101,7 +125,7 @@ recon --web
 ```
 ~/.recon/
 ├── recon.py         ← 入口（5 行）
-├── recon/           ← 主包（21 文件）
+├── recon/           ← 主包（28 文件）
 │   ├── core.py      ← ModuleOutput, ANSI 颜色, 工具
 │   ├── cli.py       ← CLI 解析 + 交互模式
 │   ├── analysis.py  ← 评分引擎 + 商业洞察
@@ -122,11 +146,88 @@ recon --web
 │   ├── knowledge.py ← 行业知识库
 │   ├── config.py    ← API Key 配置
 │   ├── rules.py     ← 推理规则
-│   └── demo.py      ← 离线演示数据
+│   ├── demo.py      ← 离线演示数据
+│   ├── person.py    ← Person mode orchestrator
+│   ├── person_sources.py   ← Public data scrapers
+│   ├── person_ai.py        ← DeepSeek AI analysis
+│   ├── person_render.py    ← Cyberpunk TUI renderer
+│   ├── person_export.py    ← PDF / MD / JSON export
+│   ├── person_client.py    ← Importable API client
+│   ├── person_api_server.py ← Flask API server
+│   └── person_web.py       ← Web UI wrapper
 ├── modules/         ← 用户插件
 ├── Dockerfile
 └── requirements.txt
 ```
+
+## Person Mode
+
+Person mode (`--person` / `-p`) is an interactive TUI for passive intelligence gathering on individuals, not domains.
+
+```
+recon -p
+```
+
+Enter a name, a social handle, or `name + company` to begin:
+
+| Input format     | Example                        |
+|------------------|--------------------------------|
+| Full name        | `Toki Hamasaki`                |
+| Handle + website | `@toki + example.com`          |
+| Name + company   | `Toki Hamasaki + Acme Corp`    |
+| Website only     | `https://example.com/about`    |
+
+### Data sources (public, passive)
+
+| Source             | Method                                      |
+|--------------------|---------------------------------------------|
+| X / Twitter        | Nitter mirror (profile + recent posts)      |
+| GitHub             | Public API (bio / repos / org)              |
+| News               | DuckDuckGo HTML search (news mentions)      |
+| LinkedIn           | Google cache (linkedin.com/in profiles)     |
+| Instagram          | Public profile scrape + Google fallback     |
+| Website            | Page scrape (if website URL provided)       |
+
+### AI analysis
+
+Raw data from all sources is sent to DeepSeek (via OpenAI-compatible API) which produces a structured **intent map**:
+
+- `core_drive` — one-sentence summary of the person's fundamental motivation
+- `recurring_signals` — topics / words / emotions appearing 3+ times
+- `workarounds` — clumsy detours that reveal real pain points
+- `direction` — trajectory based on last 6 months of signals
+- `contact_window` — what topic/framing would get their attention
+- `confidence` — 0–100 score
+- `data_quality` — high / medium / low
+
+### Interactive export
+
+After analysis, the TUI shows an export footer:
+
+```
+│  [E] Export PDF  [M] Export Markdown  [J] JSON  │
+│  [C] Copy for AI  [Q] Quit                      │
+```
+
+Press `1` / `2` / `3` to switch between **cyan**, **green**, and **pink** color themes mid-session.
+
+### Themes
+
+```bash
+recon -p --theme cyan    # cyberpunk cyan (default)
+recon -p --theme green   # matrix green
+recon -p --theme pink    # synthwave pink
+```
+
+### Person Web UI
+
+```bash
+recon -p --web
+```
+
+Starts a Flask server on `http://localhost:5001` with a web-based interface for the same person analysis engine.
+
+---
 
 ## Hackathon Notes
 

@@ -12,6 +12,13 @@ NITTER_MIRRORS = [
     "https://nitter.lqdev.org",
     "https://nitter.woodland.cafe",
     "https://nitter.cz",
+    "https://nitter.privacydev.net",
+    "https://nitter.1d4.us",
+    "https://nitter.kavin.rocks",
+    "https://nitter.unixfox.eu",
+    "https://nitter.fdn.fr",
+    "https://nitter.snpdev.dev",
+    "https://nitter.nl",
 ]
 
 PLATFORMS = {"x.com", "twitter.com", "github.com", "instagram.com", "linkedin.com"}
@@ -92,12 +99,65 @@ async def fetch_nitter(parsed, client, sem):
                     }
                 except Exception:
                     continue
+
+        if not result["raw_text"] and parsed["type"] in ("name", "name_company"):
+            name = f"{parsed['first']} {parsed['last']}".strip()
+            for mirror in NITTER_MIRRORS:
+                try:
+                    await asyncio.sleep(random.uniform(0.5, 1.5))
+                    search_url = f"{mirror}/search?q={quote_plus(name)}"
+                    resp = await client.get(search_url, timeout=15, follow_redirects=True)
+                    if resp.status_code != 200:
+                        continue
+                    soup = BeautifulSoup(resp.text, "html.parser")
+                    posts = []
+                    for tweet in soup.select(".timeline-item"):
+                        content_el = tweet.select_one(".tweet-content")
+                        if content_el:
+                            posts.append(content_el.get_text(strip=True))
+                    if posts:
+                        raw = soup.get_text(separator=" ", strip=True)
+                        return {
+                            "source": f"nitter ({mirror})",
+                            "raw_text": raw[:5000],
+                            "posts": posts[:50],
+                            "bio": f"Search results for {name}",
+                            "timestamp": datetime.utcnow().isoformat(),
+                        }
+                except Exception:
+                    continue
+
         return result
 
 
 async def fetch_github(parsed, client, sem):
     async with sem:
         result = empty_result("github")
+
+        if parsed["type"] in ("name", "name_company"):
+            name = f"{parsed['first']} {parsed['last']}".strip()
+            try:
+                await asyncio.sleep(random.uniform(0.5, 1.5))
+                search_url = f"https://api.github.com/search/users?q={quote_plus(name)}+in:name&sort=joined&per_page=5"
+                resp = await client.get(search_url, timeout=15)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    users = data.get("items", [])
+                    if users:
+                        user = users[0]
+                        profile_resp = await client.get(f"https://api.github.com/users/{user['login']}", timeout=15)
+                        if profile_resp.status_code == 200:
+                            profile = profile_resp.json()
+                            return {
+                                "source": "github",
+                                "raw_text": str(profile),
+                                "posts": [],
+                                "bio": profile.get("bio") or profile.get("company") or "",
+                                "timestamp": datetime.utcnow().isoformat(),
+                            }
+            except Exception:
+                pass
+
         handles = []
         if parsed["type"] == "handle":
             handles = [parsed["handle"]]
@@ -143,20 +203,24 @@ async def fetch_google_news(parsed, client, sem):
 
         try:
             await asyncio.sleep(random.uniform(0.5, 1.5))
-            url = f"https://news.google.com/rss/search?q={quote_plus(query)}&hl=en-US&gl=US&ceid=US:en"
-            resp = await client.get(url, timeout=15, headers={"User-Agent": "Mozilla/5.0"})
+            url = f"https://html.duckduckgo.com/html/?q={quote_plus(query + ' news')}"
+            resp = await client.get(url, timeout=15, headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+            })
             if resp.status_code != 200:
                 return result
-            soup = BeautifulSoup(resp.text, "xml")
+            soup = BeautifulSoup(resp.text, "html.parser")
             posts = []
-            for item in soup.select("item"):
-                title = item.select_one("title")
-                link = item.select_one("link")
-                if title:
-                    posts.append(f"{title.get_text(strip=True)} — {link.get_text(strip=True) if link else ''}")
+            for result_el in soup.select(".result"):
+                title_el = result_el.select_one(".result__title a")
+                snippet_el = result_el.select_one(".result__snippet")
+                if title_el:
+                    title = title_el.get_text(strip=True)
+                    snippet = snippet_el.get_text(strip=True) if snippet_el else ""
+                    posts.append(f"{title} — {snippet}")
             raw = soup.get_text(separator=" ", strip=True)
             return {
-                "source": "google_news",
+                "source": "duckduckgo_news",
                 "raw_text": raw[:5000],
                 "posts": posts[:30],
                 "bio": "",
@@ -263,7 +327,37 @@ async def fetch_instagram(parsed, client, sem):
         return result
 
 
-async def run_all_sources(input_str, status_callback=None):
+async def fetch_website(url, client, sem):
+    async with sem:
+        result = empty_result("website")
+        if not url:
+            return result
+        try:
+            if not url.startswith("http"):
+                url = "https://" + url
+            await asyncio.sleep(random.uniform(0.3, 1.0))
+            resp = await client.get(url, timeout=20, follow_redirects=True, headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+            })
+            if resp.status_code != 200:
+                return result
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for tag in soup(["script", "style", "nav", "footer", "header", "noscript"]):
+                tag.decompose()
+            text = soup.get_text(separator=" ", strip=True)
+            title = soup.title.get_text(strip=True) if soup.title else ""
+            return {
+                "source": "website",
+                "raw_text": text[:5000],
+                "posts": [f"Title: {title}"] if title else [],
+                "bio": title,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        except Exception:
+            return result
+
+
+async def run_all_sources(input_str, website=None, status_callback=None):
     parsed = parse_input(input_str)
     async with httpx.AsyncClient(timeout=30) as client:
         sem = asyncio.Semaphore(3)
@@ -288,10 +382,13 @@ async def run_all_sources(input_str, status_callback=None):
         tasks = [
             run_one("nitter", fetch_nitter(parsed, client, sem)),
             run_one("github", fetch_github(parsed, client, sem)),
-            run_one("google_news", fetch_google_news(parsed, client, sem)),
+            run_one("duckduckgo_news", fetch_google_news(parsed, client, sem)),
             run_one("linkedin", fetch_linkedin_google(parsed, client, sem)),
             run_one("instagram", fetch_instagram(parsed, client, sem)),
         ]
+
+        if website:
+            tasks.append(run_one("website", fetch_website(website, client, sem)))
 
         final = {}
         for coro in asyncio.as_completed(tasks):
