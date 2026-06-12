@@ -256,10 +256,10 @@ def main():
     parser.add_argument('--save', action='store_true', help='保存扫描到历史记录')
     parser.add_argument('--history', action='store_true', help='查看历史扫描记录')
     parser.add_argument('--diff', nargs=2, metavar=('ID1', 'ID2'), help='比较两次历史扫描')
-    parser.add_argument('--person', '-p', metavar='TARGET',
-        help='Person recon: "name", "handle platform", or "name company"')
-    parser.add_argument('--theme', choices=['cyan', 'green', 'pink'], default='cyan',
-        help='Color theme for person mode (default: cyan)')
+    parser.add_argument('--person', '-p', action='store_true',
+        help='Person recon mode — enter name interactively in the TUI')
+    parser.add_argument('--theme', choices=['cyan', 'green', 'pink'], default='green',
+        help='Color theme for person mode (default: green)')
     parser.add_argument('--web', action='store_true', help='启动 Web UI')
     parser.add_argument('--demo', action='store_true', help='使用内置演示数据，不发起网络请求')
     parser.add_argument('--demo-profile', choices=list_profiles(), default=DEFAULT_PROFILE, help='演示数据画像')
@@ -270,9 +270,14 @@ def main():
     load_config()
 
     # Route subcommands that don't need domains
+    if args.person and args.web:
+        from recon.person_web import run_person_web
+        run_person_web(theme=args.theme)
+        return
+
     if args.person:
         from recon.person import run_person_recon
-        run_person_recon(args.person, export=args.report, theme=args.theme)
+        run_person_recon(export=args.report, theme=args.theme)
         return
 
     if args.web:
